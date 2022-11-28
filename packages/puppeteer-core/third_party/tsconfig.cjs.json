@@ -3,6 +3,8 @@
   "compilerOptions": {
     "declarationMap": false,
     "outDir": "../lib/cjs/third_party",
-    "sourceMap": false
+    "sourceMap": false,
+    "checkJs": false,
+    "strict": false
   }
 }

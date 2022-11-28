@@ -23,6 +23,7 @@ import {EventEmitter} from '../EventEmitter.js';
 import {ProtocolError} from '../Errors.js';
 import {ConnectionCallback} from '../Connection.js';
 
+
 interface Command {
   id: number;
   method: string;
