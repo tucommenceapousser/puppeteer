@@ -58,7 +58,7 @@ export class BrowserRunner {
   #userDataDir: string;
   #isTempUserDataDir?: boolean;
   #closed = true;
-  #listeners: PuppeteerEventListener[] = [];
+  #listeners: PuppeteerEventListener<any>[] = [];
   #processClosing!: Promise<void>;
 
   proc?: childProcess.ChildProcess;
@@ -155,10 +155,10 @@ export class BrowserRunner {
         }
       });
     });
-    this.#listeners = [addEventListener(process, 'exit', this.kill.bind(this))];
+    this.#listeners = [addEventListener(process as any, 'exit', this.kill.bind(this))];
     if (handleSIGINT) {
       this.#listeners.push(
-        addEventListener(process, 'SIGINT', () => {
+        addEventListener(process as any, 'SIGINT', () => {
           this.kill();
           process.exit(130);
         })
@@ -166,12 +166,12 @@ export class BrowserRunner {
     }
     if (handleSIGTERM) {
       this.#listeners.push(
-        addEventListener(process, 'SIGTERM', this.close.bind(this))
+        addEventListener(process as any, 'SIGTERM', this.close.bind(this))
       );
     }
     if (handleSIGHUP) {
       this.#listeners.push(
-        addEventListener(process, 'SIGHUP', this.close.bind(this))
+        addEventListener(process as any, 'SIGHUP', this.close.bind(this))
       );
     }
   }
@@ -308,7 +308,7 @@ function waitForWSEndpoint(
 
   return new Promise((resolve, reject) => {
     const listeners = [
-      addEventListener(rl, 'line', onLine),
+      addEventListener(rl, 'line', onLine as any),
       addEventListener(rl, 'close', () => {
         return onClose();
       }),
@@ -316,7 +316,7 @@ function waitForWSEndpoint(
         return onClose();
       }),
       addEventListener(browserProcess, 'error', error => {
-        return onClose(error);
+        return onClose(error  as any);
       }),
     ];
     const timeoutId = timeout ? setTimeout(onTimeout, timeout) : 0;

@@ -353,16 +353,16 @@ export const enum PageEmittedEvents {
  *
  * @public
  */
-export interface PageEventObject {
-  close: never;
+export type PageEventObject = {
+  close: undefined;
   console: ConsoleMessage;
   dialog: Dialog;
-  domcontentloaded: never;
+  domcontentloaded: undefined;
   error: Error;
   frameattached: Frame;
   framedetached: Frame;
   framenavigated: Frame;
-  load: never;
+  load: undefined;
   metrics: {title: string; metrics: Metrics};
   pageerror: Error;
   popup: Page;
@@ -370,10 +370,15 @@ export interface PageEventObject {
   response: HTTPResponse;
   requestfailed: HTTPRequest;
   requestfinished: HTTPRequest;
-  requestservedfromcache: HTTPRequest;
+  requestservedfromcache: HTTPRequest|undefined;
   workercreated: WebWorker;
   workerdestroyed: WebWorker;
 }
+
+/**
+ * @internal
+ */
+type PageEventHandler = Handler<PageEventObject[keyof PageEventObject]>;
 
 /**
  * Page provides methods to interact with a single tab or
@@ -424,8 +429,8 @@ export interface PageEventObject {
  *
  * @public
  */
-export class Page extends EventEmitter {
-  #handlerMap = new WeakMap<Handler, Handler>();
+export class Page extends EventEmitter<PageEventObject> {
+  #handlerMap = new WeakMap<PageEventHandler, PageEventHandler>();
 
   /**
    * @internal
@@ -459,22 +464,19 @@ export class Page extends EventEmitter {
    *
    * :::
    */
-  override on<K extends keyof PageEventObject>(
-    eventName: K,
-    handler: (event: PageEventObject[K]) => void
-  ): EventEmitter {
+  override on<Key extends keyof PageEventObject>(eventName: Key, handler: Handler<PageEventObject[Key]>): EventEmitter<PageEventObject> {
     if (eventName === 'request') {
       const wrap =
-        this.#handlerMap.get(handler) ||
+        this.#handlerMap.get(handler as any) ||
         ((event: HTTPRequest) => {
           event.enqueueInterceptAction(() => {
-            return handler(event as PageEventObject[K]);
+            return handler(event as any);
           });
         });
 
-      this.#handlerMap.set(handler, wrap);
+      this.#handlerMap.set(handler as any, wrap as any);
 
-      return super.on(eventName, wrap);
+      return super.on(eventName, wrap as any);
     }
     return super.on(eventName, handler);
   }
@@ -482,7 +484,7 @@ export class Page extends EventEmitter {
   override once<K extends keyof PageEventObject>(
     eventName: K,
     handler: (event: PageEventObject[K]) => void
-  ): EventEmitter {
+  ): EventEmitter<PageEventObject> {
     // Note: this method only exists to define the types; we delegate the impl
     // to EventEmitter.
     return super.once(eventName, handler);
@@ -491,9 +493,9 @@ export class Page extends EventEmitter {
   override off<K extends keyof PageEventObject>(
     eventName: K,
     handler: (event: PageEventObject[K]) => void
-  ): EventEmitter {
+  ): EventEmitter<PageEventObject> {
     if (eventName === 'request') {
-      handler = this.#handlerMap.get(handler) || handler;
+      handler = this.#handlerMap.get(handler as PageEventHandler) || handler;
     }
 
     return super.off(eventName, handler);

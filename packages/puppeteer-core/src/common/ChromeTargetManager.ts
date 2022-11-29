@@ -26,6 +26,7 @@ import {
   TargetFactory,
   TargetManager,
   TargetManagerEmittedEvents,
+  TargetManagerEmittedEventTypes,
 } from './TargetManager.js';
 
 /**
@@ -35,7 +36,7 @@ import {
  *
  * @internal
  */
-export class ChromeTargetManager extends EventEmitter implements TargetManager {
+export class ChromeTargetManager extends EventEmitter<TargetManagerEmittedEventTypes> implements TargetManager {
   #connection: Connection;
   /**
    * Keeps track of the following events: 'Target.targetCreated',
@@ -244,7 +245,9 @@ export class ChromeTargetManager extends EventEmitter implements TargetManager {
       // Special case for service workers: report TargetGone event when
       // the worker is destroyed.
       const target = this.#attachedTargetsByTargetId.get(event.targetId);
-      this.emit(TargetManagerEmittedEvents.TargetGone, target);
+      if (target) {
+        this.emit(TargetManagerEmittedEvents.TargetGone, target);
+      }
       this.#attachedTargetsByTargetId.delete(event.targetId);
     }
   };

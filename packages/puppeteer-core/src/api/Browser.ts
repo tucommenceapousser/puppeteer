@@ -167,7 +167,23 @@ export const enum BrowserEmittedEvents {
    * Note that this includes target destructions in incognito browser contexts.
    */
   TargetDestroyed = 'targetdestroyed',
-}
+  /**
+   * Emitted when a target is discovered but not attached to Puppeteer.
+   *
+   * @remarks
+   *
+   * Note that this includes target destructions in incognito browser contexts.
+   */
+  TargetDiscovered = 'targetdiscovered'
+};
+
+export type BrowserEvents = {
+  [BrowserEmittedEvents.Disconnected]: undefined,
+  [BrowserEmittedEvents.TargetChanged]: Target,
+  [BrowserEmittedEvents.TargetCreated]: Target,
+  [BrowserEmittedEvents.TargetDestroyed]: Target,
+  [BrowserEmittedEvents.TargetDiscovered]: Protocol.Target.TargetInfo,
+};
 
 /**
  * A Browser is created when Puppeteer connects to a Chromium instance, either through
@@ -214,7 +230,7 @@ export const enum BrowserEmittedEvents {
  *
  * @public
  */
-export class Browser extends EventEmitter {
+export class Browser extends EventEmitter<BrowserEvents> {
   /**
    * @internal
    */
@@ -441,29 +457,4 @@ export class Browser extends EventEmitter {
   isConnected(): boolean {
     throw new Error('Not implemented');
   }
-}
-/**
- * @public
- */
-export const enum BrowserContextEmittedEvents {
-  /**
-   * Emitted when the url of a target inside the browser context changes.
-   * Contains a {@link Target} instance.
-   */
-  TargetChanged = 'targetchanged',
-
-  /**
-   * Emitted when a target is created within the browser context, for example
-   * when a new page is opened by
-   * {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/open | window.open}
-   * or by {@link BrowserContext.newPage | browserContext.newPage}
-   *
-   * Contains a {@link Target} instance.
-   */
-  TargetCreated = 'targetcreated',
-  /**
-   * Emitted when a target is destroyed within the browser context, for example
-   * when a page is closed. Contains a {@link Target} instance.
-   */
-  TargetDestroyed = 'targetdestroyed',
 }

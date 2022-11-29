@@ -19,6 +19,39 @@ import {Page} from './Page.js';
 import {Target} from '../common/Target.js';
 import type {Permission, Browser} from './Browser.js';
 
+
+/**
+ * @public
+ */
+ export const enum BrowserContextEmittedEvents {
+  /**
+   * Emitted when the url of a target inside the browser context changes.
+   * Contains a {@link Target} instance.
+   */
+  TargetChanged = 'targetchanged',
+
+  /**
+   * Emitted when a target is created within the browser context, for example
+   * when a new page is opened by
+   * {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/open | window.open}
+   * or by {@link BrowserContext.newPage | browserContext.newPage}
+   *
+   * Contains a {@link Target} instance.
+   */
+  TargetCreated = 'targetcreated',
+  /**
+   * Emitted when a target is destroyed within the browser context, for example
+   * when a page is closed. Contains a {@link Target} instance.
+   */
+  TargetDestroyed = 'targetdestroyed',
+}
+
+export type BrowserContextEvents = {
+  [BrowserContextEmittedEvents.TargetChanged]: Target,
+  [BrowserContextEmittedEvents.TargetCreated]: Target,
+  [BrowserContextEmittedEvents.TargetDestroyed]: Target,
+}
+
 /**
  * BrowserContexts provide a way to operate multiple independent browser
  * sessions. When a browser is launched, it has a single BrowserContext used by
@@ -54,7 +87,7 @@ import type {Permission, Browser} from './Browser.js';
  * @public
  */
 
-export class BrowserContext extends EventEmitter {
+export class BrowserContext extends EventEmitter<BrowserContextEvents> {
   /**
    * @internal
    */

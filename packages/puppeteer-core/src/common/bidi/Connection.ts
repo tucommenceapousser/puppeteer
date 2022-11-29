@@ -49,7 +49,7 @@ interface Event {
 /**
  * @internal
  */
-export class Connection extends EventEmitter {
+export class Connection extends EventEmitter<Record<string, unknown>> {
   #transport: ConnectionTransport;
   #delay: number;
   #lastId = 0;

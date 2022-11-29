@@ -32,6 +32,15 @@ import {debugError} from './util.js';
 
 const UTILITY_WORLD_NAME = '__puppeteer_utility_world__';
 
+const FrameAttachedEvent: unique symbol = Symbol('FrameManager.FrameAttached'); 
+const FrameNavigatedEvent: unique symbol = Symbol('FrameManager.FrameNavigated'); 
+const FrameDetachedEvent: unique symbol = Symbol('FrameManager.FrameDetached'); 
+const FrameSwappedEvent: unique symbol = Symbol('FrameManager.FrameSwapped'); 
+const LifecycleEventEvent: unique symbol = Symbol('FrameManager.LifecycleEvent'); 
+const FrameNavigatedWithinDocumentEvent: unique symbol = Symbol('FrameManager.FrameNavigatedWithinDocument'); 
+const ExecutionContextCreatedEvent: unique symbol = Symbol('FrameManager.ExecutionContextCreated'); 
+const ExecutionContextDestroyedEvent: unique symbol = Symbol('FrameManager.ExecutionContextDestroyed'); 
+
 /**
  * We use symbols to prevent external parties listening to these events.
  * They are internal to Puppeteer.
@@ -39,24 +48,36 @@ const UTILITY_WORLD_NAME = '__puppeteer_utility_world__';
  * @internal
  */
 export const FrameManagerEmittedEvents = {
-  FrameAttached: Symbol('FrameManager.FrameAttached'),
-  FrameNavigated: Symbol('FrameManager.FrameNavigated'),
-  FrameDetached: Symbol('FrameManager.FrameDetached'),
-  FrameSwapped: Symbol('FrameManager.FrameSwapped'),
-  LifecycleEvent: Symbol('FrameManager.LifecycleEvent'),
-  FrameNavigatedWithinDocument: Symbol(
-    'FrameManager.FrameNavigatedWithinDocument'
-  ),
-  ExecutionContextCreated: Symbol('FrameManager.ExecutionContextCreated'),
-  ExecutionContextDestroyed: Symbol('FrameManager.ExecutionContextDestroyed'),
-};
+  FrameAttached: FrameAttachedEvent,
+  FrameNavigated: FrameNavigatedEvent,
+  FrameDetached: FrameDetachedEvent,
+  FrameSwapped: FrameSwappedEvent,
+  LifecycleEvent: LifecycleEventEvent,
+  FrameNavigatedWithinDocument: FrameNavigatedWithinDocumentEvent,
+  ExecutionContextCreated: ExecutionContextCreatedEvent,
+  ExecutionContextDestroyed: ExecutionContextDestroyedEvent,
+} as const;
+
+/**
+ * @internal
+ */
+export type FrameManagerEvents = {
+  [FrameAttachedEvent]: Frame,
+  [FrameNavigatedEvent]: Frame,
+  [FrameDetachedEvent]: Frame,
+  [FrameSwappedEvent]: Frame|null,
+  [LifecycleEventEvent]: Frame,
+  [FrameNavigatedWithinDocumentEvent]: Frame,
+  [ExecutionContextCreatedEvent]: Frame,
+  [ExecutionContextDestroyedEvent]: Frame,
+}
 
 /**
  * A frame manager manages the frames for a given {@link Page | page}.
  *
  * @internal
  */
-export class FrameManager extends EventEmitter {
+export class FrameManager extends EventEmitter<FrameManagerEvents> {
   #page: Page;
   #networkManager: NetworkManager;
   #timeoutSettings: TimeoutSettings;

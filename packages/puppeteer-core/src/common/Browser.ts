@@ -32,13 +32,12 @@ import {
   TargetFilterCallback,
   IsPageTargetCallback,
   BrowserEmittedEvents,
-  BrowserContextEmittedEvents,
   BrowserContextOptions,
   WEB_PERMISSION_TO_PROTOCOL_PERMISSION,
   WaitForTargetOptions,
   Permission,
 } from '../api/Browser.js';
-import {BrowserContext} from '../api/BrowserContext.js';
+import {BrowserContext, BrowserContextEmittedEvents} from '../api/BrowserContext.js';
 
 /**
  * @internal
@@ -143,7 +142,7 @@ export class CDPBrowser extends BrowserBase {
   }
 
   #emitDisconnected = () => {
-    this.emit(BrowserEmittedEvents.Disconnected);
+    this.emit(BrowserEmittedEvents.Disconnected, undefined);
   };
 
   /**
@@ -371,7 +370,7 @@ export class CDPBrowser extends BrowserBase {
   };
 
   #onTargetDiscovered = (targetInfo: Protocol.Target.TargetInfo): void => {
-    this.emit('targetdiscovered', targetInfo);
+    this.emit(BrowserEmittedEvents.TargetDiscovered, targetInfo);
   };
 
   /**

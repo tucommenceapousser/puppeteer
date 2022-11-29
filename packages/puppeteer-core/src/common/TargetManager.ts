@@ -46,7 +46,7 @@ export type TargetInterceptor = (
  *
  * @internal
  */
-export interface TargetManager extends EventEmitter {
+export interface TargetManager extends EventEmitter<TargetManagerEmittedEventTypes> {
   getAvailableTargets(): Map<string, Target>;
   initialize(): Promise<void>;
   dispose(): void;
@@ -68,4 +68,14 @@ export const enum TargetManagerEmittedEvents {
   TargetAvailable = 'targetAvailable',
   TargetGone = 'targetGone',
   TargetChanged = 'targetChanged',
+}
+
+export type TargetManagerEmittedEventTypes = {
+  [TargetManagerEmittedEvents.TargetDiscovered]: Protocol.Target.TargetInfo,
+  [TargetManagerEmittedEvents.TargetAvailable]: Target,
+  [TargetManagerEmittedEvents.TargetGone]: Target,
+  [TargetManagerEmittedEvents.TargetChanged]: {
+    target: Target;
+    targetInfo: Protocol.Target.TargetInfo;
+  },
 }

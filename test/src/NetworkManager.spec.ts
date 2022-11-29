@@ -24,7 +24,7 @@ import {EventEmitter} from 'puppeteer-core/internal/common/EventEmitter.js';
 import {Frame} from 'puppeteer-core/internal/common/Frame.js';
 import {HTTPResponse} from 'puppeteer-core/internal/common/HTTPResponse.js';
 
-class MockCDPSession extends EventEmitter {
+class MockCDPSession extends EventEmitter<Record<string, unknown>> {
   async send(): Promise<any> {}
   connection() {
     return undefined;

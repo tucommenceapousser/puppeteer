@@ -27,7 +27,7 @@ import {assert} from '../util/assert.js';
  */
 export class PipeTransport implements ConnectionTransport {
   #pipeWrite: NodeJS.WritableStream;
-  #eventListeners: PuppeteerEventListener[];
+  #eventListeners: PuppeteerEventListener<any>[];
 
   #isClosed = false;
   #pendingMessage = '';
@@ -41,16 +41,16 @@ export class PipeTransport implements ConnectionTransport {
   ) {
     this.#pipeWrite = pipeWrite;
     this.#eventListeners = [
-      addEventListener(pipeRead, 'data', buffer => {
+      addEventListener(pipeRead  as any, 'data', buffer => {
         return this.#dispatch(buffer);
       }),
-      addEventListener(pipeRead, 'close', () => {
+      addEventListener(pipeRead  as any,  'close', () => {
         if (this.onclose) {
           this.onclose.call(null);
         }
       }),
-      addEventListener(pipeRead, 'error', debugError),
-      addEventListener(pipeWrite, 'error', debugError),
+      addEventListener(pipeRead  as any, 'error', debugError),
+      addEventListener(pipeWrite  as any, 'error', debugError),
     ];
   }
 

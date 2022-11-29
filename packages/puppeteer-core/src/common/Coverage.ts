@@ -17,7 +17,7 @@
 import {assert} from '../util/assert.js';
 import {addEventListener, debugError, PuppeteerEventListener} from './util.js';
 import {Protocol} from 'devtools-protocol';
-import {CDPSession} from './Connection.js';
+import {CDPSession, CDPSessionEvents} from './Connection.js';
 
 import {EVALUATION_SCRIPT_URL} from './ExecutionContext.js';
 import {removeEventListeners} from './util.js';
@@ -189,6 +189,7 @@ export class Coverage {
   }
 }
 
+
 /**
  * @public
  */
@@ -197,7 +198,7 @@ export class JSCoverage {
   #enabled = false;
   #scriptURLs = new Map<string, string>();
   #scriptSources = new Map<string, string>();
-  #eventListeners: PuppeteerEventListener[] = [];
+  #eventListeners: PuppeteerEventListener<any>[] = [];
   #resetOnNavigation = false;
   #reportAnonymousScripts = false;
   #includeRawScriptCoverage = false;
@@ -228,12 +229,12 @@ export class JSCoverage {
     this.#scriptURLs.clear();
     this.#scriptSources.clear();
     this.#eventListeners = [
-      addEventListener(
+      addEventListener<CDPSessionEvents, 'Debugger.scriptParsed'>(
         this.#client,
         'Debugger.scriptParsed',
         this.#onScriptParsed.bind(this)
       ),
-      addEventListener(
+      addEventListener<CDPSessionEvents, 'Runtime.executionContextsCleared'>(
         this.#client,
         'Runtime.executionContextsCleared',
         this.#onExecutionContextsCleared.bind(this)
@@ -329,7 +330,7 @@ export class CSSCoverage {
   #enabled = false;
   #stylesheetURLs = new Map<string, string>();
   #stylesheetSources = new Map<string, string>();
-  #eventListeners: PuppeteerEventListener[] = [];
+  #eventListeners: PuppeteerEventListener<any>[] = [];
   #resetOnNavigation = false;
 
   constructor(client: CDPSession) {
@@ -343,13 +344,14 @@ export class CSSCoverage {
     this.#enabled = true;
     this.#stylesheetURLs.clear();
     this.#stylesheetSources.clear();
+    this.#client.on('CSS.styleSheetAdded', this.#onStyleSheet);
     this.#eventListeners = [
-      addEventListener(
+      addEventListener<CDPSessionEvents, 'CSS.styleSheetAdded'>(
         this.#client,
         'CSS.styleSheetAdded',
         this.#onStyleSheet.bind(this)
       ),
-      addEventListener(
+      addEventListener<CDPSessionEvents, 'Runtime.executionContextsCleared'>(
         this.#client,
         'Runtime.executionContextsCleared',
         this.#onExecutionContextsCleared.bind(this)

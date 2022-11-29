@@ -29,7 +29,7 @@ import {createDeferredPromise} from '../util/DeferredPromise.js';
 export type ConsoleAPICalledCallback = (
   eventType: ConsoleMessageType,
   handles: JSHandle[],
-  trace: Protocol.Runtime.StackTrace
+  trace?: Protocol.Runtime.StackTrace
 ) => void;
 
 /**
@@ -65,7 +65,7 @@ export type ExceptionThrownCallback = (
  *
  * @public
  */
-export class WebWorker extends EventEmitter {
+export class WebWorker extends EventEmitter<Record<never, never>> {
   #executionContext = createDeferredPromise<ExecutionContext>();
 
   #client: CDPSession;

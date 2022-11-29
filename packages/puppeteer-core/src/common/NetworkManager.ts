@@ -52,6 +52,20 @@ export interface InternalNetworkConditions extends NetworkConditions {
   offline: boolean;
 }
 
+const RequestEvent: unique symbol = Symbol('NetworkManager.Request');
+const RequestServedFromCacheEvent: unique symbol = Symbol('NetworkManager.RequestServedFromCache');
+const ResponseEvent: unique symbol = Symbol('NetworkManager.Response');
+const RequestFailedEvent: unique symbol = Symbol('NetworkManager.RequestFailed');
+const RequestFinishedEvent: unique symbol = Symbol('NetworkManager.RequestFinished');
+
+export type NetworkManagerEvents = {
+  [RequestEvent]: HTTPRequest;
+  [RequestServedFromCacheEvent]: HTTPRequest|undefined;
+  [ResponseEvent]: HTTPResponse;
+  [RequestFailedEvent]: HTTPRequest;
+  [RequestFinishedEvent]: HTTPRequest;
+}
+
 /**
  * We use symbols to prevent any external parties listening to these events.
  * They are internal to Puppeteer.
@@ -59,11 +73,11 @@ export interface InternalNetworkConditions extends NetworkConditions {
  * @internal
  */
 export const NetworkManagerEmittedEvents = {
-  Request: Symbol('NetworkManager.Request'),
-  RequestServedFromCache: Symbol('NetworkManager.RequestServedFromCache'),
-  Response: Symbol('NetworkManager.Response'),
-  RequestFailed: Symbol('NetworkManager.RequestFailed'),
-  RequestFinished: Symbol('NetworkManager.RequestFinished'),
+  Request: RequestEvent,
+  RequestServedFromCache: RequestServedFromCacheEvent,
+  Response: ResponseEvent,
+  RequestFailed: RequestFailedEvent,
+  RequestFinished: RequestFinishedEvent,
 } as const;
 
 interface FrameManager {
@@ -73,7 +87,7 @@ interface FrameManager {
 /**
  * @internal
  */
-export class NetworkManager extends EventEmitter {
+export class NetworkManager extends EventEmitter<NetworkManagerEvents> {
   #client: CDPSession;
   #ignoreHTTPSErrors: boolean;
   #frameManager: FrameManager;

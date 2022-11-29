@@ -46,6 +46,7 @@ import {Coverage} from './Coverage.js';
 import {Dialog} from './Dialog.js';
 import {ElementHandle} from './ElementHandle.js';
 import {EmulationManager} from './EmulationManager.js';
+import { CommonEventEmitter } from './EventEmitter.js';
 import {FileChooser} from './FileChooser.js';
 import {
   Frame,
@@ -64,6 +65,7 @@ import {
   Credentials,
   NetworkConditions,
   NetworkManagerEmittedEvents,
+  NetworkManagerEvents,
 } from './NetworkManager.js';
 import {LowerCasePaperFormat, PDFOptions, _paperFormats} from './PDFOptions.js';
 import {Viewport} from './PuppeteerViewport.js';
@@ -218,10 +220,10 @@ export class CDPPage extends Page {
     });
 
     client.on('Page.domContentEventFired', () => {
-      return this.emit(PageEmittedEvents.DOMContentLoaded);
+      return this.emit(PageEmittedEvents.DOMContentLoaded, undefined);
     });
     client.on('Page.loadEventFired', () => {
-      return this.emit(PageEmittedEvents.Load);
+      return this.emit(PageEmittedEvents.Load, undefined);
     });
     client.on('Runtime.consoleAPICalled', event => {
       return this.#onConsoleAPI(event);
@@ -255,7 +257,7 @@ export class CDPPage extends Page {
       this.#target
         ._targetManager()
         .off(TargetManagerEmittedEvents.TargetGone, this.#onDetachedFromTarget);
-      this.emit(PageEmittedEvents.Close);
+      this.emit(PageEmittedEvents.Close, undefined);
       this.#closed = true;
     });
   }
@@ -934,7 +936,7 @@ export class CDPPage extends Page {
     options: {timeout?: number} = {}
   ): Promise<HTTPRequest> {
     const {timeout = this.#timeoutSettings.timeout()} = options;
-    return waitForEvent(
+    const result = await waitForEvent<NetworkManagerEvents, typeof NetworkManagerEmittedEvents.Request>(
       this.#frameManager.networkManager,
       NetworkManagerEmittedEvents.Request,
       async request => {
@@ -949,6 +951,7 @@ export class CDPPage extends Page {
       timeout,
       this.#sessionClosePromise()
     );
+    return result;
   }
 
   override async waitForResponse(
@@ -958,7 +961,7 @@ export class CDPPage extends Page {
     options: {timeout?: number} = {}
   ): Promise<HTTPResponse> {
     const {timeout = this.#timeoutSettings.timeout()} = options;
-    return waitForEvent(
+    return waitForEvent<NetworkManagerEvents, typeof NetworkManagerEmittedEvents.Response>(
       this.#frameManager.networkManager,
       NetworkManagerEmittedEvents.Response,
       async response => {
@@ -1016,9 +1019,12 @@ export class CDPPage extends Page {
       return false;
     };
 
-    const listenToEvent = (event: symbol) => {
+    const listenToEvent = (event: typeof NetworkManagerEmittedEvents.Request | typeof NetworkManagerEmittedEvents.Response) => {
       return waitForEvent(
-        networkManager,
+        networkManager as CommonEventEmitter<{
+          [NetworkManagerEmittedEvents.Request]: HTTPRequest,
+          [NetworkManagerEmittedEvents.Response]: HTTPResponse,
+        }>,
         event,
         eventHandler,
         timeout,
@@ -1070,14 +1076,14 @@ export class CDPPage extends Page {
 
     const eventRace: Promise<Frame> = Promise.race([
       waitForEvent(
-        this.#frameManager,
+        this.#frameManager as CommonEventEmitter<Record<typeof FrameManagerEmittedEvents.FrameAttached, Frame>>,
         FrameManagerEmittedEvents.FrameAttached,
         predicate,
         timeout,
         this.#sessionClosePromise()
       ),
       waitForEvent(
-        this.#frameManager,
+        this.#frameManager as CommonEventEmitter<Record<typeof FrameManagerEmittedEvents.FrameNavigated, Frame>>,
         FrameManagerEmittedEvents.FrameNavigated,
         predicate,
         timeout,

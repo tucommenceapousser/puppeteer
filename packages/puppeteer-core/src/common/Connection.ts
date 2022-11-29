@@ -27,6 +27,14 @@ import {ProtocolError} from './Errors.js';
 /**
  * @public
  */
+export type ProtocolEvents = {
+  [Property in keyof ProtocolMapping.Events]: ProtocolMapping.Events[Property][0];
+};
+
+
+/**
+ * @public
+ */
 export {ConnectionTransport, ProtocolMapping};
 
 /**
@@ -51,7 +59,15 @@ export const ConnectionEmittedEvents = {
 /**
  * @public
  */
-export class Connection extends EventEmitter {
+ export type ConnectionEvents = {
+  sessiondetached: CDPSession,
+  sessionattached: CDPSession,
+ };
+
+/**
+ * @public
+ */
+export class Connection extends EventEmitter<ProtocolEvents & ConnectionEvents & {[key: symbol]: undefined}> {
   #url: string;
   #transport: ConnectionTransport;
   #delay: number;
@@ -213,7 +229,7 @@ export class Connection extends EventEmitter {
       session._onClosed();
     }
     this.#sessions.clear();
-    this.emit(ConnectionEmittedEvents.Disconnected);
+    this.emit(ConnectionEmittedEvents.Disconnected, undefined);
   }
 
   dispose(): void {
@@ -282,6 +298,14 @@ export const CDPSessionEmittedEvents = {
 } as const;
 
 /**
+ * @public
+ */
+ export type CDPSessionEvents = {
+  sessiondetached: CDPSession,
+  sessionattached: CDPSession,
+ } & ProtocolEvents & {[key: symbol]: undefined};
+
+/**
  * The `CDPSession` instances are used to talk raw Chrome Devtools Protocol.
  *
  * @remarks
@@ -309,7 +333,7 @@ export const CDPSessionEmittedEvents = {
  *
  * @public
  */
-export class CDPSession extends EventEmitter {
+export class CDPSession extends EventEmitter<CDPSessionEvents> {
   /**
    * @internal
    */
@@ -419,7 +443,7 @@ export class CDPSessionImpl extends CDPSession {
       }
     } else {
       assert(!object.id);
-      this.emit(object.method, object.params);
+      this.emit(object.method as keyof ProtocolMapping.Events, object.params);
     }
   }
 
@@ -454,7 +478,7 @@ export class CDPSessionImpl extends CDPSession {
     }
     this.#callbacks.clear();
     this.#connection = undefined;
-    this.emit(CDPSessionEmittedEvents.Disconnected);
+    this.emit(CDPSessionEmittedEvents.Disconnected, undefined);
   }
 
   /**

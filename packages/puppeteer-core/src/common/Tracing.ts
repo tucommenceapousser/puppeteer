@@ -122,6 +122,9 @@ export class Tracing {
     });
     this.#client.once('Tracing.tracingComplete', async event => {
       try {
+        if (!event.stream) {
+          throw new Error('Stream is missing in Tracing.tracingComplete');
+        }
         const readable = await getReadableFromProtocolStream(
           this.#client,
           event.stream

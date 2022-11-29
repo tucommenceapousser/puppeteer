@@ -22,8 +22,9 @@ import {TargetFilterCallback} from '../api/Browser.js';
 import {
   TargetFactory,
   TargetInterceptor,
-  TargetManagerEmittedEvents,
+  TargetManagerEmittedEventTypes,
   TargetManager,
+  TargetManagerEmittedEvents,
 } from './TargetManager.js';
 import {EventEmitter} from './EventEmitter.js';
 
@@ -42,7 +43,7 @@ import {EventEmitter} from './EventEmitter.js';
  *   @internal
  */
 export class FirefoxTargetManager
-  extends EventEmitter
+  extends EventEmitter<TargetManagerEmittedEventTypes>
   implements TargetManager
 {
   #connection: Connection;

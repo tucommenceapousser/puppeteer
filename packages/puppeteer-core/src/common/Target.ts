@@ -109,7 +109,9 @@ export class Target {
         return true;
       }
       const popupPage = await this.page();
-      openerPage.emit(PageEmittedEvents.Popup, popupPage);
+      if (popupPage) {
+        openerPage.emit(PageEmittedEvents.Popup, popupPage);
+      }
       return true;
     });
     this._isClosedPromise = new Promise<void>(fulfill => {

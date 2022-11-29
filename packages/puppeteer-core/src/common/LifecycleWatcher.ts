@@ -25,12 +25,12 @@ import {
   createDeferredPromise,
 } from '../util/DeferredPromise.js';
 import {TimeoutError} from './Errors.js';
-import {FrameManager, FrameManagerEmittedEvents} from './FrameManager.js';
+import {FrameManager, FrameManagerEmittedEvents, FrameManagerEvents} from './FrameManager.js';
 import {Frame} from './Frame.js';
 import {HTTPRequest} from './HTTPRequest.js';
 import {HTTPResponse} from './HTTPResponse.js';
-import {NetworkManagerEmittedEvents} from './NetworkManager.js';
-import {CDPSessionEmittedEvents} from './Connection.js';
+import {NetworkManagerEmittedEvents, NetworkManagerEvents} from './NetworkManager.js';
+import {CDPSessionEmittedEvents, CDPSessionEvents} from './Connection.js';
 /**
  * @public
  */
@@ -70,7 +70,7 @@ export class LifecycleWatcher {
   #frame: Frame;
   #timeout: number;
   #navigationRequest: HTTPRequest | null = null;
-  #eventListeners: PuppeteerEventListener[];
+  #eventListeners: PuppeteerEventListener<any>[];
   #initialLoaderId: string;
 
   #sameDocumentNavigationCompleteCallback: (x?: Error) => void = noop;
@@ -125,7 +125,7 @@ export class LifecycleWatcher {
     this.#frame = frame;
     this.#timeout = timeout;
     this.#eventListeners = [
-      addEventListener(
+      addEventListener<CDPSessionEvents, typeof CDPSessionEmittedEvents.Disconnected>(
         frameManager.client,
         CDPSessionEmittedEvents.Disconnected,
         this.#terminate.bind(
@@ -133,42 +133,42 @@ export class LifecycleWatcher {
           new Error('Navigation failed because browser has disconnected!')
         )
       ),
-      addEventListener(
+      addEventListener<FrameManagerEvents, typeof FrameManagerEmittedEvents.LifecycleEvent>(
         this.#frameManager,
         FrameManagerEmittedEvents.LifecycleEvent,
         this.#checkLifecycleComplete.bind(this)
       ),
-      addEventListener(
+      addEventListener<FrameManagerEvents, typeof FrameManagerEmittedEvents.FrameNavigatedWithinDocument>(
         this.#frameManager,
         FrameManagerEmittedEvents.FrameNavigatedWithinDocument,
         this.#navigatedWithinDocument.bind(this)
       ),
-      addEventListener(
+      addEventListener<FrameManagerEvents, typeof FrameManagerEmittedEvents.FrameNavigated>(
         this.#frameManager,
         FrameManagerEmittedEvents.FrameNavigated,
         this.#navigated.bind(this)
       ),
-      addEventListener(
+      addEventListener<FrameManagerEvents, typeof FrameManagerEmittedEvents.FrameSwapped>(
         this.#frameManager,
         FrameManagerEmittedEvents.FrameSwapped,
         this.#frameSwapped.bind(this)
       ),
-      addEventListener(
+      addEventListener<FrameManagerEvents, typeof FrameManagerEmittedEvents.FrameDetached>(
         this.#frameManager,
         FrameManagerEmittedEvents.FrameDetached,
         this.#onFrameDetached.bind(this)
       ),
-      addEventListener(
+      addEventListener<NetworkManagerEvents, typeof NetworkManagerEmittedEvents.Request>(
         this.#frameManager.networkManager,
         NetworkManagerEmittedEvents.Request,
         this.#onRequest.bind(this)
       ),
-      addEventListener(
+      addEventListener<NetworkManagerEvents, typeof NetworkManagerEmittedEvents.Response>(
         this.#frameManager.networkManager,
         NetworkManagerEmittedEvents.Response,
         this.#onResponse.bind(this)
       ),
-      addEventListener(
+      addEventListener<NetworkManagerEvents, typeof NetworkManagerEmittedEvents.RequestFailed>(
         this.#frameManager.networkManager,
         NetworkManagerEmittedEvents.RequestFailed,
         this.#onRequestFailed.bind(this)
@@ -272,7 +272,7 @@ export class LifecycleWatcher {
     this.#checkLifecycleComplete();
   }
 
-  #frameSwapped(frame: Frame): void {
+  #frameSwapped(frame: Frame|null): void {
     if (frame !== this.#frame) {
       return;
     }

@@ -28,20 +28,20 @@ export {EventType, Handler};
 /**
  * @public
  */
-export interface CommonEventEmitter {
-  on(event: EventType, handler: Handler): CommonEventEmitter;
-  off(event: EventType, handler: Handler): CommonEventEmitter;
+export interface CommonEventEmitter<Events extends Record<EventType, unknown>> {
+  on<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): CommonEventEmitter<Events>;
+  off<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): CommonEventEmitter<Events>;
   /* To maintain parity with the built in NodeJS event emitter which uses removeListener
    * rather than `off`.
    * If you're implementing new code you should use `off`.
    */
-  addListener(event: EventType, handler: Handler): CommonEventEmitter;
-  removeListener(event: EventType, handler: Handler): CommonEventEmitter;
-  emit(event: EventType, eventData?: unknown): boolean;
-  once(event: EventType, handler: Handler): CommonEventEmitter;
-  listenerCount(event: string): number;
+  addListener<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): CommonEventEmitter<Events>;
+  removeListener<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): CommonEventEmitter<Events>;
+  emit<Key extends keyof Events>(event: Key, eventData: Events[Key]): boolean;
+  once<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): CommonEventEmitter<Events>;
+  listenerCount<Key extends keyof Events>(event: Key): number;
 
-  removeAllListeners(event?: EventType): CommonEventEmitter;
+  removeAllListeners<Key extends keyof Events>(event?: Key): CommonEventEmitter<Events>;
 }
 
 /**
@@ -56,15 +56,15 @@ export interface CommonEventEmitter {
  *
  * @public
  */
-export class EventEmitter implements CommonEventEmitter {
-  private emitter: Emitter;
-  private eventsMap = new Map<EventType, Handler[]>();
+export class EventEmitter<Events extends Record<EventType, unknown>> implements CommonEventEmitter<Events> {
+  #emitter: Emitter<Events>;
+  #eventsMap = new Map<keyof Events, Handler<Events[keyof Events]>[]>();
 
   /**
    * @internal
    */
   constructor() {
-    this.emitter = mitt(this.eventsMap);
+    this.#emitter = mitt(this.#eventsMap);
   }
 
   /**
@@ -73,8 +73,8 @@ export class EventEmitter implements CommonEventEmitter {
    * @param handler - the function to be called when the event occurs.
    * @returns `this` to enable you to chain method calls.
    */
-  on(event: EventType, handler: Handler): EventEmitter {
-    this.emitter.on(event, handler);
+  on<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): EventEmitter<Events> {
+    this.#emitter.on(event, handler);
     return this;
   }
 
@@ -84,8 +84,8 @@ export class EventEmitter implements CommonEventEmitter {
    * @param handler - the function that should be removed.
    * @returns `this` to enable you to chain method calls.
    */
-  off(event: EventType, handler: Handler): EventEmitter {
-    this.emitter.off(event, handler);
+  off<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): EventEmitter<Events> {
+    this.#emitter.off(event, handler);
     return this;
   }
 
@@ -93,7 +93,7 @@ export class EventEmitter implements CommonEventEmitter {
    * Remove an event listener.
    * @deprecated please use {@link EventEmitter.off} instead.
    */
-  removeListener(event: EventType, handler: Handler): EventEmitter {
+  removeListener<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): EventEmitter<Events> {
     this.off(event, handler);
     return this;
   }
@@ -102,7 +102,7 @@ export class EventEmitter implements CommonEventEmitter {
    * Add an event listener.
    * @deprecated please use {@link EventEmitter.on} instead.
    */
-  addListener(event: EventType, handler: Handler): EventEmitter {
+  addListener<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): EventEmitter<Events> {
     this.on(event, handler);
     return this;
   }
@@ -114,8 +114,8 @@ export class EventEmitter implements CommonEventEmitter {
    * @param eventData - any data you'd like to emit with the event
    * @returns `true` if there are any listeners, `false` if there are not.
    */
-  emit(event: EventType, eventData?: unknown): boolean {
-    this.emitter.emit(event, eventData);
+  emit<Key extends keyof Events>(event: Key, eventData: Events[Key]): boolean {
+    this.#emitter.emit(event, eventData);
     return this.eventListenersCount(event) > 0;
   }
 
@@ -125,8 +125,8 @@ export class EventEmitter implements CommonEventEmitter {
    * @param handler - the handler function to run when the event occurs
    * @returns `this` to enable you to chain method calls.
    */
-  once(event: EventType, handler: Handler): EventEmitter {
-    const onceHandler: Handler = eventData => {
+  once<Key extends keyof Events>(event: Key, handler: Handler<Events[Key]>): EventEmitter<Events> {
+    const onceHandler: Handler<Events[Key]> = eventData => {
       handler(eventData);
       this.off(event, onceHandler);
     };
@@ -140,7 +140,7 @@ export class EventEmitter implements CommonEventEmitter {
    * @param event - the event to get the listener count for
    * @returns the number of listeners bound to the given event
    */
-  listenerCount(event: EventType): number {
+  listenerCount<Key extends keyof Events>(event: Key): number {
     return this.eventListenersCount(event);
   }
 
@@ -150,16 +150,16 @@ export class EventEmitter implements CommonEventEmitter {
    * @param event - the event to remove listeners for.
    * @returns `this` to enable you to chain method calls.
    */
-  removeAllListeners(event?: EventType): EventEmitter {
+  removeAllListeners<Key extends keyof Events>(event?: Key): EventEmitter<Events> {
     if (event) {
-      this.eventsMap.delete(event);
+      this.#eventsMap.delete(event);
     } else {
-      this.eventsMap.clear();
+      this.#eventsMap.clear();
     }
     return this;
   }
 
-  private eventListenersCount(event: EventType): number {
-    return this.eventsMap.get(event)?.length || 0;
+  private eventListenersCount<Key extends keyof Events>(event: Key): number {
+    return this.#eventsMap.get(event)?.length || 0;
   }
 }

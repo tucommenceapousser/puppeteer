@@ -23,7 +23,7 @@ import {CDPSession} from './Connection.js';
 import {debug} from './Debug.js';
 import {ElementHandle} from './ElementHandle.js';
 import {TimeoutError} from './Errors.js';
-import {CommonEventEmitter} from './EventEmitter.js';
+import {CommonEventEmitter, EventType} from './EventEmitter.js';
 import {ExecutionContext} from './ExecutionContext.js';
 import {JSHandle} from './JSHandle.js';
 
@@ -111,20 +111,24 @@ export async function releaseObject(
 /**
  * @internal
  */
-export interface PuppeteerEventListener {
-  emitter: CommonEventEmitter;
-  eventName: string | symbol;
-  handler: (...args: any[]) => void;
+export interface PuppeteerEventListener<Events extends Record<EventType, unknown>> {
+  emitter: CommonEventEmitter<Events>;
+  eventName: keyof Events;
+  handler: (event: Events[keyof Events]) => void;
 }
 
 /**
  * @internal
  */
-export function addEventListener(
-  emitter: CommonEventEmitter,
-  eventName: string | symbol,
-  handler: (...args: any[]) => void
-): PuppeteerEventListener {
+export function addEventListener<Events extends Record<EventType, unknown>, Key extends keyof Events>(
+  emitter: CommonEventEmitter<Events>,
+  eventName: Key,
+  handler: (event: Events[Key]) => void,
+): {
+  emitter: CommonEventEmitter<Events>;
+  eventName: Key,
+  handler: (event: Events[Key]) => void,
+} {
   emitter.on(eventName, handler);
   return {emitter, eventName, handler};
 }
@@ -132,11 +136,11 @@ export function addEventListener(
 /**
  * @internal
  */
-export function removeEventListeners(
+export function removeEventListeners<Events extends Record<EventType, unknown>, Key extends keyof Events>(
   listeners: Array<{
-    emitter: CommonEventEmitter;
-    eventName: string | symbol;
-    handler: (...args: any[]) => void;
+    emitter: CommonEventEmitter<Events>;
+    eventName: Key;
+    handler: (event: Events[Key]) => void,
   }>
 ): void {
   for (const listener of listeners) {
@@ -162,17 +166,17 @@ export const isNumber = (obj: unknown): obj is number => {
 /**
  * @internal
  */
-export async function waitForEvent<T>(
-  emitter: CommonEventEmitter,
-  eventName: string | symbol,
-  predicate: (event: T) => Promise<boolean> | boolean,
+export async function waitForEvent<Events extends Record<string, unknown>, Key extends keyof Events>(
+  emitter: CommonEventEmitter<Events>,
+  eventName: Key,
+  predicate: (event: Events[Key]) => Promise<boolean> | boolean,
   timeout: number,
   abortPromise: Promise<Error>
-): Promise<T> {
+): Promise<Events[Key]> {
   let eventTimeout: NodeJS.Timeout;
-  let resolveCallback: (value: T | PromiseLike<T>) => void;
+  let resolveCallback: (value: Events[Key]) => void;
   let rejectCallback: (value: Error) => void;
-  const promise = new Promise<T>((resolve, reject) => {
+  const promise = new Promise<Events[Key]>((resolve, reject) => {
     resolveCallback = resolve;
     rejectCallback = reject;
   });

@@ -45,7 +45,7 @@ describe('Target.createCDPSession', function () {
   it('should not report created targets for custom CDP sessions', async () => {
     const {browser} = getTestState();
     let called = 0;
-    browser.browserContexts()[0]!.on('targetcreated', async target => {
+    browser.browserContexts()[0]!.on('targetcreated' as const, async target => {
       called++;
       if (called > 1) {
         throw new Error('Too many targets created');
