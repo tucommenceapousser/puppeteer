@@ -1227,8 +1227,9 @@ export class CDPPage extends Page {
       Protocol.Emulation.SetEmulatedVisionDeficiencyRequest['type']
     >([
       'none',
-      'achromatopsia',
       'blurredVision',
+      'reducedContrast',
+      'achromatopsia',
       'deuteranopia',
       'protanopia',
       'tritanopia',

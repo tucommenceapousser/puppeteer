@@ -432,15 +432,21 @@ describe('Emulation', () => {
       }
 
       {
-        await page.emulateVisionDeficiency('achromatopsia');
-        const screenshot = await page.screenshot();
-        expect(screenshot).toBeGolden('vision-deficiency-achromatopsia.png');
-      }
-
-      {
         await page.emulateVisionDeficiency('blurredVision');
         const screenshot = await page.screenshot();
         expect(screenshot).toBeGolden('vision-deficiency-blurredVision.png');
+      }
+
+      {
+        await page.emulateVisionDeficiency('reducedContrast');
+        const screenshot = await page.screenshot();
+        expect(screenshot).toBeGolden('vision-deficiency-reducedContrast.png');
+      }
+
+      {
+        await page.emulateVisionDeficiency('achromatopsia');
+        const screenshot = await page.screenshot();
+        expect(screenshot).toBeGolden('vision-deficiency-achromatopsia.png');
       }
 
       {
