@@ -93,6 +93,37 @@ try {
   }
 }
 
+// Post-pone Promise resolution to make flaky test
+// reproduce easier
+if (process.env['DELAY_PROMISE']) {
+  let DELAY_PROMISE = Number(process.env['DELAY_PROMISE']);
+  DELAY_PROMISE = isNaN(DELAY_PROMISE) ? 10 : DELAY_PROMISE;
+
+  Promise = class<T> extends Promise<T> {
+    constructor(
+      executor: (
+        resolve: (value: T | PromiseLike<T>) => void,
+        reject: (reason?: any) => void
+      ) => void
+    ) {
+      super((resolve, reject) => {
+        executor(
+          value => {
+            return setTimeout(() => {
+              return resolve(value);
+            }, DELAY_PROMISE);
+          },
+          reason => {
+            return setTimeout(() => {
+              return reject(reason);
+            }, DELAY_PROMISE);
+          }
+        );
+      });
+    }
+  };
+}
+
 const defaultBrowserOptions = Object.assign(
   {
     handleSIGINT: true,

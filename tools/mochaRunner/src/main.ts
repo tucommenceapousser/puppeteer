@@ -118,6 +118,7 @@ async function main() {
                 'remote.log.level': 'Trace',
               },
             }),
+            DELAY_PROMISE: '10',
           }
         : {};
 
