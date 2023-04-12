@@ -49,7 +49,7 @@ interface Commands {
   };
   'browsingContext.close': {
     params: Bidi.BrowsingContext.CloseParameters;
-    returnType: Bidi.BrowsingContext.CloseResult;
+    returnType: Bidi.Message.EmptyResult;
   };
   'browsingContext.navigate': {
     params: Bidi.BrowsingContext.NavigateParameters;
@@ -73,11 +73,11 @@ interface Commands {
     returnType: Bidi.Session.StatusResult;
   };
   'session.subscribe': {
-    params: Bidi.Session.SubscribeParameters;
+    params: Bidi.Session.SubscriptionRequest;
     returnType: Bidi.Session.SubscribeResult;
   };
   'session.unsubscribe': {
-    params: Bidi.Session.SubscribeParameters;
+    params: Bidi.Session.SubscriptionRequest;
     returnType: Bidi.Session.UnsubscribeResult;
   };
 }

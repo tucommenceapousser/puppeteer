@@ -76,14 +76,16 @@ export function printSuggestions(
         return item.expectation;
       })
     );
-    console.log(
-      'The recommendations are based on the following applied expectaions:'
-    );
-    prettyPrintJSON(
-      toPrint.map(item => {
-        return item.basedOn;
-      })
-    );
+    if (action !== 'remove') {
+      console.log(
+        'The recommendations are based on the following applied expectaions:'
+      );
+      prettyPrintJSON(
+        toPrint.map(item => {
+          return item.basedOn;
+        })
+      );
+    }
   }
 }
 
@@ -147,7 +149,6 @@ export function getExpectationUpdates(
       addEntry({
         expectation: expectationEntry,
         action: 'remove',
-        basedOn: expectationEntry,
       });
     }
   }

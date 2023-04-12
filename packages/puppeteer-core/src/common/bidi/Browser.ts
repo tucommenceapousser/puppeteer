@@ -38,9 +38,7 @@ export class Browser extends BrowserBase {
       await opts.connection.send('session.new', {});
     } catch {}
     await opts.connection.send('session.subscribe', {
-      events: [
-        'browsingContext.contextCreated',
-      ] as Bidi.Session.SubscribeParametersEvent[],
+      events: ['browsingContext.contextCreated'] as Bidi.Message.EventNames[],
     });
     return new Browser(opts);
   }

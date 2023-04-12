@@ -30,6 +30,7 @@ import {isString, setPageContent, waitWithTimeout} from '../util.js';
 import {Connection} from './Connection.js';
 import {ElementHandle} from './ElementHandle.js';
 import {JSHandle} from './JSHandle.js';
+import {NetworkManager} from './NetworkManager.js';
 import {BidiSerializer} from './Serializer.js';
 
 /**
@@ -57,6 +58,7 @@ const lifeCycleToSubscribedEvent = new Map<PuppeteerLifeCycleEvent, string>([
 export class Context extends EventEmitter {
   #connection: Connection;
   #url: string;
+  networkManager: NetworkManager;
   _contextId: string;
   _timeoutSettings = new TimeoutSettings();
 
@@ -64,6 +66,7 @@ export class Context extends EventEmitter {
     super();
     this.#connection = connection;
     this._contextId = result.context;
+    this.networkManager = new NetworkManager(this);
     this.#url = result.url;
   }
 
@@ -170,7 +173,7 @@ export class Context extends EventEmitter {
     ) as Bidi.BrowsingContext.ReadinessState;
 
     try {
-      const response = await waitWithTimeout(
+      const {result} = await waitWithTimeout(
         this.connection.send('browsingContext.navigate', {
           url: url,
           context: this.id,
@@ -179,9 +182,9 @@ export class Context extends EventEmitter {
         'Navigation',
         timeout
       );
-      this.#url = response.result.url;
+      this.#url = result.url;
 
-      return null;
+      return this.networkManager.getNavigationResponse(result.navigation);
     } catch (error) {
       if (error instanceof ProtocolError) {
         error.message += ` at ${url}`;
