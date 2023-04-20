@@ -15,8 +15,8 @@
  */
 
 import expect from 'expect';
+import {Frame} from 'puppeteer-core/internal/api/Frame.js';
 import {CDPSession} from 'puppeteer-core/internal/common/Connection.js';
-import {Frame} from 'puppeteer-core/internal/common/Frame.js';
 
 import {
   getTestState,
@@ -31,11 +31,11 @@ import {
   waitEvent,
 } from './utils.js';
 
-describe('Frame specs', function () {
+describe.only('Frame specs', function () {
   setupTestBrowserHooks();
   setupTestPageAndContextHooks();
 
-  describe('Frame.executionContext', function () {
+  describe.only('Frame.executionContext', function () {
     it('should work', async () => {
       const {page, server} = getTestState();
 
@@ -73,7 +73,7 @@ describe('Frame specs', function () {
   });
 
   describe('Frame.evaluateHandle', function () {
-    it('should work', async () => {
+    it.only('should work', async () => {
       const {page, server} = getTestState();
 
       await page.goto(server.EMPTY_PAGE);
@@ -85,7 +85,7 @@ describe('Frame specs', function () {
     });
   });
 
-  describe('Frame.evaluate', function () {
+  describe.only('Frame.evaluate', function () {
     it('should throw for detached frames', async () => {
       const {page, server} = getTestState();
 
@@ -118,7 +118,7 @@ describe('Frame specs', function () {
     });
   });
 
-  describe('Frame.page', function () {
+  describe.only('Frame.page', function () {
     it('should retrieve the page from a frame', async () => {
       const {page, server} = getTestState();
       await page.goto(server.EMPTY_PAGE);
@@ -127,7 +127,7 @@ describe('Frame specs', function () {
     });
   });
 
-  describe('Frame Management', function () {
+  describe.only('Frame Management', function () {
     it('should handle nested frames', async () => {
       const {page, server} = getTestState();
 
@@ -341,7 +341,7 @@ describe('Frame specs', function () {
     });
   });
 
-  describe('Frame.client', function () {
+  describe.only('Frame.client', function () {
     it('should return the client instance', async () => {
       const {page} = getTestState();
       expect(page.mainFrame()._client()).toBeInstanceOf(CDPSession);

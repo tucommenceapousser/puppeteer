@@ -19,7 +19,6 @@ import {Page as PageBase} from '../../api/Page.js';
 import {Viewport} from '../PuppeteerViewport.js';
 
 import {Connection} from './Connection.js';
-import {Context} from './Context.js';
 import {Page} from './Page.js';
 
 interface BrowserContextOptions {
@@ -43,8 +42,7 @@ export class BrowserContext extends BrowserContextBase {
     const {result} = await this.#connection.send('browsingContext.create', {
       type: 'tab',
     });
-    const context = this.#connection.context(result.context) as Context;
-    const page = new Page(context);
+    const page = await Page._create(this.#connection, result);
     if (this.#defaultViewport) {
       try {
         await page.setViewport(this.#defaultViewport);
@@ -55,5 +53,7 @@ export class BrowserContext extends BrowserContextBase {
     return page;
   }
 
-  override async close(): Promise<void> {}
+  override async close(): Promise<void> {
+    // TODO: BiDi Close context
+  }
 }

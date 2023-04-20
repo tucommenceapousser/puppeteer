@@ -24,6 +24,7 @@ import {
   BrowserContextOptions,
 } from '../../api/Browser.js';
 import {BrowserContext as BrowserContextBase} from '../../api/BrowserContext.js';
+import {isErrorLike} from '../../util/ErrorLike.js';
 import {Viewport} from '../PuppeteerViewport.js';
 
 import {BrowserContext} from './BrowserContext.js';
@@ -33,16 +34,32 @@ import {Connection} from './Connection.js';
  * @internal
  */
 export class Browser extends BrowserBase {
+  static readonly events = [
+    'browsingContext.contextCreated',
+    'browsingContext.contextDestroyed',
+    'browsingContext.fragmentNavigated',
+    'browsingContext.domContentLoaded',
+    'browsingContext.navigationStarted',
+  ] as const;
+
   static async create(opts: Options): Promise<Browser> {
     // TODO: await until the connection is established.
     try {
       await opts.connection.send('session.new', {});
     } catch {}
-    await opts.connection.send('session.subscribe', {
-      events: [
-        'browsingContext.contextCreated',
-      ] as Bidi.Session.SubscribeParametersEvent[],
-    });
+    try {
+      await opts.connection.send('session.subscribe', {
+        events: Browser.events as unknown as Bidi.Message.EventNames[],
+      });
+    } catch (error) {
+      if (
+        isErrorLike(error) &&
+        !error.message.includes('not a valid event name')
+      ) {
+        throw error;
+      }
+    }
+
     return new Browser(opts);
   }
 
