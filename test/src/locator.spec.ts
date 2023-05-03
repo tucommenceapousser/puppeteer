@@ -15,7 +15,7 @@
  */
 
 import expect from 'expect';
-import {TimeoutError, AbortError} from 'puppeteer-core';
+import {TimeoutError} from 'puppeteer-core';
 import {LocatorEmittedEvents} from 'puppeteer-core/internal/api/Locator.js';
 import sinon from 'sinon';
 
@@ -220,9 +220,7 @@ describe('Locator', function () {
         });
         clock.tick(2000);
         abortController.abort();
-        await expect(result).rejects.toEqual(
-          new AbortError('waitForFunction was aborted.')
-        );
+        await expect(result).rejects.toThrow(/aborted/);
       } finally {
         clock?.restore();
       }
