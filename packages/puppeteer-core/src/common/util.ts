@@ -41,29 +41,176 @@ export const debugError = debug('puppeteer:error');
 /**
  * @internal
  */
-export function getExceptionMessage(
-  exceptionDetails: Protocol.Runtime.ExceptionDetails
-): string {
-  if (exceptionDetails.exception) {
-    return (
-      exceptionDetails.exception.description || exceptionDetails.exception.value
-    );
+export const parsePuppeteerUrl = (
+  url: string
+): [callerFile: string, callerSiteString: string] => {
+  url = url.slice('pptr://'.length);
+  const [callerFile, callerSiteString] = url.split(':', 2);
+  return [callerFile ?? '', callerSiteString ?? ''];
+};
+
+/**
+ * @internal
+ */
+export function createEvaluationError(
+  details: Protocol.Runtime.ExceptionDetails
+): unknown {
+  let name: string;
+  let message: string;
+  if (!details.exception) {
+    name = 'Error';
+    message = details.text;
+  } else if (
+    details.exception.type !== 'object' ||
+    details.exception.subtype !== 'error'
+  ) {
+    return valueFromRemoteObject(details.exception);
+  } else {
+    const detail = getErrorDetails(details);
+    name = detail.name;
+    message = detail.message;
   }
-  let message = exceptionDetails.text;
-  if (exceptionDetails.stackTrace) {
-    for (const callframe of exceptionDetails.stackTrace.callFrames) {
-      const location =
-        callframe.url +
-        ':' +
-        callframe.lineNumber +
-        ':' +
-        callframe.columnNumber;
-      const functionName = callframe.functionName || '<anonymous>';
-      message += `\n    at ${functionName} (${location})`;
+  const prepare = Error.prepareStackTrace;
+  Error.prepareStackTrace = (error, sites) => {
+    const trace = [error.toString()];
+    sites.shift();
+    if (details.stackTrace) {
+      for (const frame of details.stackTrace.callFrames) {
+        if (frame.url.startsWith('puppeteer:')) {
+          frame.url = frame.url.slice('puppeteer:'.length);
+          const index = frame.url.indexOf(':');
+          const callerFunctionName = frame.url.slice(0, index);
+          const callerCodeLocation = frame.url.slice(index + 1);
+          trace.push(
+            `    at ${
+              frame.functionName || callerFunctionName
+            } (${callerFunctionName} at ${callerCodeLocation}, <anonymous>:${
+              frame.lineNumber
+            }:${frame.columnNumber})`
+          );
+        } else {
+          trace.push(
+            `    at ${frame.functionName || '<anonymous>'} (${frame.url}:${
+              frame.lineNumber
+            }:${frame.columnNumber})`
+          );
+        }
+        if (trace.length > Error.stackTraceLimit) {
+          return trace.join('\n');
+        }
+      }
     }
-  }
-  return message;
+    for (const site of sites) {
+      trace.push(`    at ${site.toString()}`);
+      if (trace.length > Error.stackTraceLimit) {
+        return trace.join('\n');
+      }
+    }
+    return trace.join('\n');
+  };
+  const error = new Error(message);
+  error.name = name;
+  void error.stack;
+  Error.prepareStackTrace = prepare;
+  return error;
 }
+
+/**
+ * @internal
+ */
+export function createClientError(
+  details: Protocol.Runtime.ExceptionDetails
+): unknown {
+  let name: string;
+  let message: string;
+  if (!details.exception) {
+    name = 'Error';
+    message = details.text;
+  } else if (
+    details.exception.type !== 'object' ||
+    details.exception.subtype !== 'error'
+  ) {
+    return valueFromRemoteObject(details.exception);
+  } else {
+    const detail = getErrorDetails(details);
+    name = detail.name;
+    message = detail.message;
+  }
+  const prepare = Error.prepareStackTrace;
+  Error.prepareStackTrace = (error, _) => {
+    let trace = error.toString();
+    if (details.stackTrace) {
+      for (const callframe of details.stackTrace.callFrames) {
+        const location = `${callframe.url}:${callframe.lineNumber}:${callframe.columnNumber}`;
+        const functionName = callframe.functionName || '<anonymous>';
+        trace += `\n    at ${functionName} (${location})`;
+      }
+    }
+    return trace;
+  };
+  const error = new Error(message);
+  error.name = name;
+  void error.stack;
+  Error.prepareStackTrace = prepare;
+  return error;
+}
+
+const getErrorDetails = (details: Protocol.Runtime.ExceptionDetails) => {
+  let name = '';
+  let message: string;
+  const lines = details.exception?.description?.split('\n') ?? [];
+  const size = details.stackTrace?.callFrames.length ?? 0;
+  lines.splice(-size, size);
+  if (details.exception?.className) {
+    name = details.exception.className;
+  }
+  message = lines.join('\n');
+  if (name && message.startsWith(`${name}: `)) {
+    message = message.slice(name.length + 2);
+  }
+  return {message, name};
+};
+
+/**
+ * @internal
+ */
+const CALLER = Symbol.for('caller');
+
+/**
+ * @internal
+ */
+export const withCallerSiteIfNone = <T extends NonNullable<unknown>>(
+  name: string,
+  object: T
+): T => {
+  if (Object.prototype.hasOwnProperty.call(object, CALLER)) {
+    return object;
+  }
+  const original = Error.prepareStackTrace;
+  try {
+    Error.prepareStackTrace = (_, stack) => {
+      // First element is the function. Second element is the caller of this
+      // function. Third element is the caller of the caller of this function
+      // which is precisely what we want.
+      return stack[2];
+    };
+    return Object.assign(object, {[CALLER]: {name, site: new Error().stack}});
+  } finally {
+    Error.prepareStackTrace = original;
+  }
+};
+
+/**
+ * @internal
+ */
+export const getCallerSiteIfAvailable = <T extends NonNullable<unknown>>(
+  object: T
+): {name: string; site: NodeJS.CallSite} | undefined => {
+  if (Object.prototype.hasOwnProperty.call(object, CALLER)) {
+    return object[CALLER as keyof T] as {name: string; site: NodeJS.CallSite};
+  }
+  return undefined;
+};
 
 /**
  * @internal
